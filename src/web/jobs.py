@@ -42,7 +42,7 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.agents.editor import run_editor
 from src.agents.reviewer import run_reviewer
@@ -54,6 +54,9 @@ from src.pipeline.runner import (
     _with_transient_retry,
     run_pipeline,
 )
+
+if TYPE_CHECKING:
+    from src.web.persistence.job_store import JobPersistence
 
 logger = logging.getLogger(__name__)
 
@@ -499,11 +502,12 @@ class JobRegistry:
     reads a snapshot via :meth:`Job.to_dict`.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, persistence: "JobPersistence | None" = None) -> None:
         self._jobs: dict[str, Job] = {}
         self._queue: asyncio.Queue[str] = asyncio.Queue()
         self._worker: asyncio.Task[None] | None = None
         self._started = False
+        self._persistence = persistence
 
     # ------------------------------------------------------------------ #
     # Lifecycle
@@ -923,6 +927,9 @@ class JobRegistry:
                 }
             )
             logger.exception("Pipeline job %s failed", job.id)
+        finally:
+            if self._persistence is not None:
+                self._persistence.save_job(job.id, job.to_dict())
 
     def _run_feedback_rerun_sync(self, job: Job) -> PipelineResult:
         """Execute the feedback re-run sequence for ``job``.
