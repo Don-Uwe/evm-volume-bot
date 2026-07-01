@@ -580,7 +580,7 @@ def test_thumbnail_returns_404_for_out_of_range_position(
 
 def test_clips_router_is_registered_on_app() -> None:
     """Smoke check: the app exposes the two new paths."""
-    paths = {getattr(route, "path", None) for route in app.routes}
+    paths = set(app.openapi()["paths"].keys())
     assert "/api/jobs/{job_id}/edit-plan" in paths
     assert "/api/clips/{job_id}/{position}/thumbnail" in paths
     # Keep a reference so the unused-import lint rule does not trip on

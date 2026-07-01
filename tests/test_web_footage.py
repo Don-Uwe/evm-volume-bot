@@ -343,5 +343,5 @@ def test_search_missing_footage_index_path_param_returns_422(
 
 def test_footage_router_is_registered_on_app() -> None:
     """Smoke check: the app exposes the new search path."""
-    paths = {getattr(route, "path", None) for route in app.routes}
+    paths = set(app.openapi()["paths"].keys())
     assert "/api/footage/search" in paths
